@@ -1,4 +1,5 @@
 
+
 create table Location(
 	LocationID INT,
 	Country VARCHAR(20) NOT NULL,
