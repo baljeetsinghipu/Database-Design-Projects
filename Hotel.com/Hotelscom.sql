@@ -343,4 +343,39 @@ create table HotelFeatures(
 );
 SET SERVEROUTPUT ON;
 
+CREATE OR REPLACE PROCEDURE proc_booking (
+    bookingID VARCHAR,
+	bookingDate DATE,
+    customerID VARCHAR,
+    checkIN  DATE,
+    checkOut DATE,
+    noOfAdults INT,
+    noOfChildren INT,
+    roomId INT
+) IS
+INVALID_CUSTOMER EXCEPTION;
+
+BEGIN 
+        INSERT into Booking values (bookingID, bookingDate, customerID, checkIN, checkOut, noOfAdults, noOfChildren, roomId);
+        dbms_output.put_line('Booking Confirmed'); 
+
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        dbms_output.put_line('Error!');
+    WHEN OTHERS THEN
+        IF(SQLCODE=-20319) THEN
+            dbms_output.put_line('Error: Invalid_Customer');
+        ELSIF(SQLCODE=-20320) THEN
+            dbms_output.put_line('Error: Invalid ROOM');
+        ELSIF(SQLCODE=-20321) THEN
+            dbms_output.put_line('Error: Booking Date not available');
+        ELSIF(SQLCODE=-20322) THEN
+            dbms_output.put_line('Error: Room is not available for booking');
+        ELSIF(SQLCODE=-20323) THEN
+            dbms_output.put_line('Error: Checkin Date is more than CheckOut Data');
+        ELSE
+        NULL;
+        END IF;
+END;
+/
 
