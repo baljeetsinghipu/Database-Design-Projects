@@ -379,3 +379,29 @@ EXCEPTION
 END;
 /
 
+CREATE OR REPLACE TRIGGER trg_after_booking AFTER
+    INSERT ON Booking
+    FOR EACH ROW
+DECLARE
+before_status room.currentstatus%type;
+after_status room.currentstatus%type;
+v_Roomid room.roomid%type;
+BEGIN
+    SELECT ROOM.Currentstatus,roomid into before_status,v_roomid from room where roomid=:new.roomid;
+    update ROOM
+    SET 
+        CurrentStatus='YELLOW'
+    WHERE ROOMID =: new.Roomid;
+    SELECT ROOM.Currentstatus into after_status from room where roomid=:new.roomid;
+    dbms_output.proc_booking('Room Id:'||v_roomid ||' has been set from '|| before_status||' to ' ||after_status);
+
+END;
+/
+
+
+EXECUTE proc_booking(3, TO_DATE(SYSDATE), 1, TO_DATE('06/20/2019', 'mm/dd/yyyy'), TO_DATE('06/20/2019', 'mm/dd/yyyy'), 2, 3, 00001);
+
+--Insert into booking values(13, TO_DATE(SYSDATE),001, TO_DATE('07/15/2020', 'mm/dd/yyyy'), TO_DATE('07/30/2020', 'mm/dd/yyyy'), 2, 3,0002);
+
+
+EXECUTE proc_available_room_count(TO_DATE('06/20/2019', 'mm/dd/yyyy'));
