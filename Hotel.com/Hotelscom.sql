@@ -399,6 +399,66 @@ END;
 /
 
 
+CREATE OR REPLACE TRIGGER trg_before_booking BEFORE 
+    INSERT ON Booking
+    FOR EACH ROW
+DECLARE
+found_count_1 INT;
+found_count_2 INT;
+found_count_3 INT;
+
+CURSOR checkinout_cur IS
+        SELECT  CHECKIN,CHECKOUT 
+        FROM    Booking
+        WHERE   Roomid =:new.roomid;
+    l_booking  checkinout_cur%ROWTYPE;
+
+INVALID_CUSTOMER EXCEPTION;
+INVALID_ROOM EXCEPTION;
+BOOK_NOT_AVAILABLE EXCEPTION;
+NOT_AVAILABLE_ROOM EXCEPTION;
+DATE_INVALID EXCEPTION;
+BEGIN
+--    dbms_output.proc_booking('Room Number is not Valid');
+    SELECT COUNT(*) INTO found_count_1 FROM CUSTOMER WHERE CUSTOMERID=:new.CUSTOMERID;
+    SELECT COUNT(*) INTO found_count_2 FROM ROOM WHERE ROOMID=:new.ROOMID;
+    SELECT COUNT(*) INTO found_count_3 FROM ROOM WHERE ROOMID=:new.ROOMID and ROOM.CURRENTSTATUS = 'YELLOW' OR ROOM.CURRENTSTATUS = 'GREEN';
+
+    IF(found_count_1=0) THEN
+    RAISE  INVALID_CUSTOMER;
+    ELSIF (found_count_2=0) THEN
+    RAISE INVALID_ROOM;
+    ELSIF (found_count_3=0) THEN
+    RAISE NOT_AVAILABLE_ROOM;
+    ELSIF (:new.checkin>:new.checkout) THEN
+    RAISE DATE_INVALID;
+    ELSE
+        NULL;
+    END IF;
+    OPEN  checkinout_cur;
+    LOOP
+    FETCH checkinout_cur INTO l_booking;
+    EXIT WHEN checkinout_cur%NOTFOUND;
+    if ((l_booking.checkin<=:new.checkin and l_booking.checkout>=:new.checkin) or (l_booking.checkin<=:new.checkout and l_booking.checkout>=:new.checkout) ) THEN
+    RAISE BOOK_NOT_AVAILABLE;
+    END if;
+    END Loop;
+    CLOSE checkinout_cur;
+EXCEPTION
+    WHEN INVALID_CUSTOMER THEN
+    Raise_application_error(-20319, 'Invalid_Customer');
+    WHEN INVALID_ROOM THEN
+    Raise_application_error(-20320, 'Invalid ROOM');
+    WHEN BOOK_NOT_AVAILABLE THEN
+    Raise_application_error(-20321, 'Booking Date not available'); 
+    WHEN NOT_AVAILABLE_ROOM THEN
+    Raise_application_error(-20322, 'Room is not available for booking'); 
+    WHEN DATE_INVALID THEN
+    Raise_application_error(-20323, 'Checkin Date can not be more than checkout date'); 
+    
+END;
+/
+
 EXECUTE proc_booking(3, TO_DATE(SYSDATE), 1, TO_DATE('06/20/2019', 'mm/dd/yyyy'), TO_DATE('06/20/2019', 'mm/dd/yyyy'), 2, 3, 00001);
 
 --Insert into booking values(13, TO_DATE(SYSDATE),001, TO_DATE('07/15/2020', 'mm/dd/yyyy'), TO_DATE('07/30/2020', 'mm/dd/yyyy'), 2, 3,0002);
