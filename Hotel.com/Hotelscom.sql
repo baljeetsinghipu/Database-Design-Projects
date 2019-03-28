@@ -1,4 +1,5 @@
 
+
 create table Location(
 	LocationID INT,
 	Country VARCHAR(20) NOT NULL,
@@ -463,5 +464,40 @@ EXECUTE proc_booking(3, TO_DATE(SYSDATE), 1, TO_DATE('06/20/2019', 'mm/dd/yyyy')
 
 --Insert into booking values(13, TO_DATE(SYSDATE),001, TO_DATE('07/15/2020', 'mm/dd/yyyy'), TO_DATE('07/30/2020', 'mm/dd/yyyy'), 2, 3,0002);
 
+
+
+
+CREATE OR REPLACE PROCEDURE proc_available_room_count (
+    input_date IN DATE
+) IS
+INVALID_CUSTOMER EXCEPTION;
+roomCount INT;
+rtn room.currentstatus%type;
+
+CURSOR available_room_count_cur IS
+        SELECT  Room.RoomTypeID,RoomTypeName Rn,COUNT(*) cnt
+        FROM    ROOM,RoomType
+        WHERE   Room.RoomTypeID = RoomType.RoomTypeID 
+        AND Room.ActiveFrom<input_date 
+        AND Room.ActiveTo>input_date 
+        AND (CurrentStatus = 'GREEN' OR CurrentStatus = 'YELLOW')
+        AND Room.RoomID not in (select roomid from booking where Booking.checkin>=input_date AND Booking.checkout<=input_date and Booking.roomid = room.roomid )
+        GROUP BY Room.RoomTypeID, RoomTypeName;
+        
+        l_available  available_room_count_cur%ROWTYPE;
+    
+BEGIN 
+    OPEN  available_room_count_cur;
+    LOOP
+    FETCH available_room_count_cur INTO l_available;
+    EXIT WHEN available_room_count_cur%NOTFOUND;
+    dbms_output.put_line(l_available.rn ||' '|| l_available.cnt);
+
+  
+    END Loop;
+    CLOSE available_room_count_cur;
+     
+END;
+/
 
 EXECUTE proc_available_room_count(TO_DATE('06/20/2019', 'mm/dd/yyyy'));
