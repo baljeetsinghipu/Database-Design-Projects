@@ -1,0 +1,1 @@
+Complete database design (ER Diagram/SQL Code/Triggers) for hotels.com
